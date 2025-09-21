@@ -4,6 +4,7 @@ import v.landau.config.HarvesterConfig;
 import v.landau.service.FileHarvesterService;
 import v.landau.service.impl.FileHarvesterServiceImpl;
 import v.landau.strategy.impl.DefaultFileFilterStrategy;
+import v.landau.strategy.impl.FlexibleExtensionFilterStrategy;
 import v.landau.util.ConsoleLogger;
 import v.landau.util.DirectoryTreePrinter;
 
@@ -31,7 +32,7 @@ public class Main {
             String targetPath = scanner.nextLine().trim();
 
             // Optional: ask for file extensions filter
-            System.out.print("Enter file extensions to filter (comma-separated, or press Enter for all): ");
+            System.out.print("Enter rules (e.g., +jpg,+png,-tmp,-bak; press Enter for no filter): ");
             String extensionsInput = scanner.nextLine().trim();
 
             // Parse extensions for filter
@@ -56,7 +57,7 @@ public class Main {
 
             // Add file filter if extensions specified
             if (extensions != null) {
-                configBuilder.fileFilterStrategy(new DefaultFileFilterStrategy(extensions));
+                configBuilder.fileFilterStrategy(new FlexibleExtensionFilterStrategy(extensions));
             }
 
             HarvesterConfig config = configBuilder.build();
