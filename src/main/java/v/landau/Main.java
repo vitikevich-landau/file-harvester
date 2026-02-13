@@ -1,5 +1,6 @@
 package v.landau;
 
+import v.landau.config.CollisionResolutionMode;
 import v.landau.config.HarvesterConfig;
 import v.landau.service.FileHarvesterService;
 import v.landau.service.impl.FileHarvesterServiceImpl;
@@ -43,7 +44,7 @@ public class Main {
                     .sourceDirectory(sourceDir)
                     .targetDirectory(targetDir)
                     .createTargetIfNotExists(true)
-                    .overwriteExisting(askYesNo(scanner, "Overwrite existing files? (y/n): "))
+                    .collisionResolutionMode(askCollisionResolutionMode(scanner))
                     .preserveFileAttributes(askYesNo(scanner, "Preserve file attributes? (y/n): "));
 
             if (extensions != null) {
@@ -114,6 +115,32 @@ public class Main {
             logger.error("Fatal error: " + e.getMessage());
             e.printStackTrace();
             System.exit(1);
+        }
+    }
+
+
+    private static CollisionResolutionMode askCollisionResolutionMode(Scanner scanner) {
+        System.out.println("Choose collision resolution mode:");
+        System.out.println("1) OVERWRITE - overwrite files with the same name");
+        System.out.println("2) SUFFIX_COUNTER - add numeric suffix (_1, _2, ...)");
+        System.out.println("3) PRESERVE_RELATIVE_PATH - preserve source subdirectory structure");
+        System.out.println("4) HASH_SUFFIX - add hash suffix from source path");
+
+        while (true) {
+            System.out.print("Enter mode (1-4): ");
+            String answer = scanner.nextLine().trim();
+            switch (answer) {
+                case "1":
+                    return CollisionResolutionMode.OVERWRITE;
+                case "2":
+                    return CollisionResolutionMode.SUFFIX_COUNTER;
+                case "3":
+                    return CollisionResolutionMode.PRESERVE_RELATIVE_PATH;
+                case "4":
+                    return CollisionResolutionMode.HASH_SUFFIX;
+                default:
+                    logger.warn("Invalid mode. Please enter a number from 1 to 4.");
+            }
         }
     }
 

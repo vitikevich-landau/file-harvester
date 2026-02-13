@@ -16,7 +16,7 @@ public class HarvesterConfig {
     private final Path sourceDirectory;
     private final Path targetDirectory;
     private final boolean createTargetIfNotExists;
-    private final boolean overwriteExisting;
+    private final CollisionResolutionMode collisionResolutionMode;
     private final boolean preserveFileAttributes;
     private final FileFilterStrategy fileFilterStrategy;
     private final FileProcessingStrategy processingStrategy;
@@ -25,7 +25,9 @@ public class HarvesterConfig {
         this.sourceDirectory = Objects.requireNonNull(builder.sourceDirectory, "Source directory cannot be null");
         this.targetDirectory = Objects.requireNonNull(builder.targetDirectory, "Target directory cannot be null");
         this.createTargetIfNotExists = builder.createTargetIfNotExists;
-        this.overwriteExisting = builder.overwriteExisting;
+        this.collisionResolutionMode = builder.collisionResolutionMode != null
+                ? builder.collisionResolutionMode
+                : CollisionResolutionMode.SUFFIX_COUNTER;
         this.preserveFileAttributes = builder.preserveFileAttributes;
         this.fileFilterStrategy = builder.fileFilterStrategy != null
                 ? builder.fileFilterStrategy
@@ -39,7 +41,8 @@ public class HarvesterConfig {
     public Path getSourceDirectory() { return sourceDirectory; }
     public Path getTargetDirectory() { return targetDirectory; }
     public boolean isCreateTargetIfNotExists() { return createTargetIfNotExists; }
-    public boolean isOverwriteExisting() { return overwriteExisting; }
+    public boolean isOverwriteExisting() { return collisionResolutionMode == CollisionResolutionMode.OVERWRITE; }
+    public CollisionResolutionMode getCollisionResolutionMode() { return collisionResolutionMode; }
     public boolean isPreserveFileAttributes() { return preserveFileAttributes; }
     public FileFilterStrategy getFileFilterStrategy() { return fileFilterStrategy; }
     public FileProcessingStrategy getProcessingStrategy() { return processingStrategy; }
@@ -55,7 +58,7 @@ public class HarvesterConfig {
         private Path sourceDirectory;
         private Path targetDirectory;
         private boolean createTargetIfNotExists = true;
-        private boolean overwriteExisting = false;
+        private CollisionResolutionMode collisionResolutionMode = CollisionResolutionMode.SUFFIX_COUNTER;
         private boolean preserveFileAttributes = true;
         private FileFilterStrategy fileFilterStrategy;
         private FileProcessingStrategy processingStrategy;
@@ -76,7 +79,14 @@ public class HarvesterConfig {
         }
 
         public Builder overwriteExisting(boolean overwrite) {
-            this.overwriteExisting = overwrite;
+            this.collisionResolutionMode = overwrite
+                    ? CollisionResolutionMode.OVERWRITE
+                    : CollisionResolutionMode.SUFFIX_COUNTER;
+            return this;
+        }
+
+        public Builder collisionResolutionMode(CollisionResolutionMode mode) {
+            this.collisionResolutionMode = mode;
             return this;
         }
 
