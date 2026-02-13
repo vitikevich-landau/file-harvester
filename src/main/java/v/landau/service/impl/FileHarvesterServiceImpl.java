@@ -78,12 +78,59 @@ public class FileHarvesterServiceImpl implements FileHarvesterService {
             throw new HarvesterException("Source path is not a directory: " + source);
         }
 
-        if (source.equals(target)) {
-            throw new HarvesterException("Source and target directories cannot be the same");
+        Path sourceCanonical = toCanonicalPath(source);
+        Path sourceAbsolute = source.toAbsolutePath().normalize();
+        Path targetAbsolute = target.toAbsolutePath().normalize();
+        boolean targetExists = Files.exists(target);
+        Path targetCanonical = targetExists
+                ? toCanonicalPath(target)
+                : resolveByRealParent(target);
+
+        boolean sameDirectory = targetExists
+                ? sourceCanonical.equals(targetCanonical)
+                : sourceAbsolute.equals(targetAbsolute) || sourceCanonical.equals(targetCanonical);
+
+        if (sameDirectory) {
+            throw new HarvesterException("Source and target directories cannot be the same: source="
+                    + sourceCanonical + ", target=" + targetCanonical);
         }
 
-        if (target.startsWith(source)) {
-            throw new HarvesterException("Target directory cannot be inside source directory");
+        boolean targetInsideSource = targetExists
+                ? targetCanonical.startsWith(sourceCanonical)
+                : targetAbsolute.startsWith(sourceAbsolute) || targetCanonical.startsWith(sourceCanonical);
+
+        if (targetInsideSource) {
+            throw new HarvesterException("Target directory cannot be inside source directory: source="
+                    + sourceCanonical + ", target=" + targetCanonical);
+        }
+    }
+
+    private Path toCanonicalPath(Path path) {
+        try {
+            return path.toRealPath();
+        } catch (IOException e) {
+            return path.toAbsolutePath().normalize();
+        }
+    }
+
+    private Path resolveByRealParent(Path path) {
+        Path normalizedAbsolutePath = path.toAbsolutePath().normalize();
+        Path existingParent = normalizedAbsolutePath;
+
+        while (existingParent != null && !Files.exists(existingParent)) {
+            existingParent = existingParent.getParent();
+        }
+
+        if (existingParent == null) {
+            return normalizedAbsolutePath;
+        }
+
+        try {
+            Path realExistingParent = existingParent.toRealPath();
+            Path relativeRemainder = existingParent.relativize(normalizedAbsolutePath);
+            return realExistingParent.resolve(relativeRemainder).normalize();
+        } catch (IOException e) {
+            return normalizedAbsolutePath;
         }
     }
 
