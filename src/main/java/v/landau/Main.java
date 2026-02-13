@@ -6,6 +6,7 @@ import v.landau.service.impl.FileHarvesterServiceImpl;
 import v.landau.strategy.impl.FlexibleExtensionFilterStrategy;
 import v.landau.util.ConsoleLogger;
 import v.landau.util.DirectoryTreePrinter;
+import v.landau.util.ExtensionTokenNormalizer;
 import v.landau.util.PathPrompter;
 
 import java.nio.file.Path;
@@ -31,16 +32,11 @@ public class Main {
             System.out.print("Enter rules (e.g., +jpg,+png,-tmp,-bak; press Enter for no filter): ");
             String extensionsInput = scanner.nextLine().trim();
 
-            // Parse extensions for filter (kept compatible with existing logic)
-            String[] extensions = null;
-            if (!extensionsInput.isEmpty()) {
-                String[] parts = extensionsInput.split(",");
-                extensions = new String[parts.length];
-                for (int i = 0; i < parts.length; i++) {
-                    String t = parts[i].trim().toLowerCase();
-                    extensions[i] = t.startsWith(".") ? t : "." + t;
-                }
-            }
+            ExtensionTokenNormalizer.NormalizedRules normalizedRules =
+                    ExtensionTokenNormalizer.normalize(extensionsInput);
+            String[] extensions = normalizedRules.hasAnyRules()
+                    ? normalizedRules.toFilterTokensArray()
+                    : null;
 
             // Build configuration
             HarvesterConfig.Builder configBuilder = HarvesterConfig.builder()
@@ -63,7 +59,11 @@ public class Main {
                         .showSize(true)
                         .showHidden(false);
                 if (extensions != null) {
-                    treePrinterBuilder.filterExtensions(extensions);
+                    try {
+                        treePrinterBuilder.filterExtensions(normalizedRules.toTreePreviewIncludesArray());
+                    } catch (IllegalStateException e) {
+                        logger.warn("Tree preview: " + e.getMessage());
+                    }
                 }
                 DirectoryTreePrinter treePrinter = treePrinterBuilder.build();
                 treePrinter.printTree(config.getSourceDirectory(), "Source Directory Structure");
@@ -99,7 +99,11 @@ public class Main {
                             .showSize(true)
                             .showHidden(false);
                     if (extensions != null) {
-                        targetTreeBuilder.filterExtensions(extensions);
+                        try {
+                            targetTreeBuilder.filterExtensions(normalizedRules.toTreePreviewIncludesArray());
+                        } catch (IllegalStateException e) {
+                            logger.warn("Tree preview: " + e.getMessage());
+                        }
                     }
                     DirectoryTreePrinter targetTreePrinter = targetTreeBuilder.build();
                     targetTreePrinter.printTree(config.getTargetDirectory(),

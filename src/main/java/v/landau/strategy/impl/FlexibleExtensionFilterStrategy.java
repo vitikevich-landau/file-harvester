@@ -1,6 +1,7 @@
 package v.landau.strategy.impl;
 
 import v.landau.strategy.FileFilterStrategy;
+import v.landau.util.ExtensionTokenNormalizer;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -49,34 +50,24 @@ public class FlexibleExtensionFilterStrategy implements FileFilterStrategy {
         Set<String> exc = new HashSet<>();
         Boolean noExtFlag = null; // null -> not specified (defaults to true)
 
-        if (extensions != null) {
-            for (String raw : extensions) {
-                if (raw == null) continue;
-                String token = raw.trim().toLowerCase(Locale.ROOT);
-                if (token.isEmpty()) continue;
+        String[] normalizedTokens = ExtensionTokenNormalizer.normalize(extensions).toFilterTokensArray();
+        for (String normalized : normalizedTokens) {
+            boolean isInclude = true;
+            String token = normalized;
+            if (token.charAt(0) == '-') {
+                isInclude = false;
+                token = token.substring(1);
+            }
 
-                // Strip ALL leading dots because upstream may have forced a dot prefix
-                int pos = 0;
-                while (pos < token.length() && token.charAt(pos) == '.') pos++;
-                token = token.substring(pos);
-                if (token.isEmpty()) continue;
+            if ("noext".equals(token) || "+noext".equals(token)) {
+                noExtFlag = isInclude;
+                continue;
+            }
 
-                boolean isInclude = true;
-                char first = token.charAt(0);
-                if (first == '+' || first == '-') {
-                    isInclude = (first != '-');
-                    token = token.substring(1); // drop the sign
-                    if (token.isEmpty()) continue;
-                }
-
-                if ("noext".equals(token)) {
-                    noExtFlag = isInclude;
-                    continue;
-                }
-
-                // Normalized token is now like "jpg" or "tar.gz"
-                if (isInclude) inc.add(token);
-                else exc.add(token);
+            if (isInclude) {
+                inc.add(token);
+            } else {
+                exc.add(token);
             }
         }
 
