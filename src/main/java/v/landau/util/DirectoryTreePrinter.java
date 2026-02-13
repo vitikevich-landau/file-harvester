@@ -67,6 +67,9 @@ public class DirectoryTreePrinter {
 
         public Builder filterExtensions(String... extensions) {
             this.filterExtensions = Arrays.stream(extensions)
+                    .filter(Objects::nonNull)
+                    .map(ext -> ext.trim().toLowerCase(Locale.ROOT))
+                    .filter(ext -> !ext.isEmpty())
                     .map(ext -> ext.startsWith(".") ? ext : "." + ext)
                     .collect(Collectors.toSet());
             return this;
