@@ -58,4 +58,28 @@ class FileHarvesterServiceImplTest {
         assertEquals("old-content", Files.readString(targetDir.resolve("report.txt")));
         assertEquals("new-content", Files.readString(targetDir.resolve("report_1.txt")));
     }
+    @Test
+    void collectOperationsDisabledKeepsStatisticsButNotOperations() throws IOException, HarvesterException {
+        Path sourceDir = Files.createDirectory(tempDir.resolve("source3"));
+        Path targetDir = Files.createDirectory(tempDir.resolve("target3"));
+
+        Files.writeString(sourceDir.resolve("a.txt"), "abc");
+        Files.writeString(sourceDir.resolve("b.txt"), "12345");
+
+        HarvesterConfig config = HarvesterConfig.builder()
+                .sourceDirectory(sourceDir)
+                .targetDirectory(targetDir)
+                .collectOperations(false)
+                .build();
+
+        var result = new FileHarvesterServiceImpl().harvest(config);
+
+        assertTrue(result.getOperations().isEmpty());
+        assertEquals(2, result.getTotalFilesProcessed());
+        assertEquals(2, result.getFilesCopied());
+        assertEquals(0, result.getFilesSkipped());
+        assertEquals(0, result.getFilesFailed());
+        assertEquals(8, result.getTotalBytesCopied());
+    }
+
 }
