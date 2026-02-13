@@ -18,6 +18,7 @@ public class HarvesterConfig {
     private final boolean createTargetIfNotExists;
     private final boolean overwriteExisting;
     private final boolean preserveFileAttributes;
+    private final boolean exactProgress;
     private final FileFilterStrategy fileFilterStrategy;
     private final FileProcessingStrategy processingStrategy;
 
@@ -27,6 +28,7 @@ public class HarvesterConfig {
         this.createTargetIfNotExists = builder.createTargetIfNotExists;
         this.overwriteExisting = builder.overwriteExisting;
         this.preserveFileAttributes = builder.preserveFileAttributes;
+        this.exactProgress = builder.exactProgress;
         this.fileFilterStrategy = builder.fileFilterStrategy != null
                 ? builder.fileFilterStrategy
                 : new AcceptAllFilterStrategy();
@@ -41,6 +43,7 @@ public class HarvesterConfig {
     public boolean isCreateTargetIfNotExists() { return createTargetIfNotExists; }
     public boolean isOverwriteExisting() { return overwriteExisting; }
     public boolean isPreserveFileAttributes() { return preserveFileAttributes; }
+    public boolean isExactProgress() { return exactProgress; }
     public FileFilterStrategy getFileFilterStrategy() { return fileFilterStrategy; }
     public FileProcessingStrategy getProcessingStrategy() { return processingStrategy; }
 
@@ -57,6 +60,7 @@ public class HarvesterConfig {
         private boolean createTargetIfNotExists = true;
         private boolean overwriteExisting = false;
         private boolean preserveFileAttributes = true;
+        private boolean exactProgress = false;
         private FileFilterStrategy fileFilterStrategy;
         private FileProcessingStrategy processingStrategy;
 
@@ -82,6 +86,11 @@ public class HarvesterConfig {
 
         public Builder preserveFileAttributes(boolean preserve) {
             this.preserveFileAttributes = preserve;
+            return this;
+        }
+
+        public Builder exactProgress(boolean exactProgress) {
+            this.exactProgress = exactProgress;
             return this;
         }
 

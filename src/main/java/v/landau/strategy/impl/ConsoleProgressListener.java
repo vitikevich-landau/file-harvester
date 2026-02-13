@@ -5,6 +5,7 @@ import v.landau.strategy.ProgressListener;
 import v.landau.util.ConsoleLogger;
 
 import java.nio.file.Path;
+import java.util.OptionalInt;
 
 /**
  * Progress listener that outputs to console.
@@ -12,7 +13,7 @@ import java.nio.file.Path;
 public class ConsoleProgressListener implements ProgressListener {
     private final ConsoleLogger logger = ConsoleLogger.getInstance();
     private int processedCount = 0;
-    private int totalFiles = 0;
+    private OptionalInt totalFiles = OptionalInt.empty();
 
     @Override
     public void onFileProcessed(FileOperation operation) {
@@ -20,19 +21,17 @@ public class ConsoleProgressListener implements ProgressListener {
 
         switch (operation.getStatus()) {
             case SUCCESS:
-                logger.success(String.format("[%d/%d] ✓ %s",
-                        processedCount, totalFiles, operation.getSourcePath().getFileName()));
+                logger.success(String.format(progressPrefix() + " ✓ %s",
+                        operation.getSourcePath().getFileName()));
                 break;
             case SKIPPED:
             case ALREADY_EXISTS:
-                logger.warn(String.format("[%d/%d] ⊘ %s - %s",
-                        processedCount, totalFiles, operation.getSourcePath().getFileName(),
-                        operation.getMessage()));
+                logger.warn(String.format(progressPrefix() + " ⊘ %s - %s",
+                        operation.getSourcePath().getFileName(), operation.getMessage()));
                 break;
             case FAILED:
-                logger.error(String.format("[%d/%d] ✗ %s - %s",
-                        processedCount, totalFiles, operation.getSourcePath().getFileName(),
-                        operation.getMessage()));
+                logger.error(String.format(progressPrefix() + " ✗ %s - %s",
+                        operation.getSourcePath().getFileName(), operation.getMessage()));
                 break;
             case FILTERED_OUT:
                 // Silent skip for filtered files
@@ -42,10 +41,14 @@ public class ConsoleProgressListener implements ProgressListener {
     }
 
     @Override
-    public void onStart(int totalFiles) {
+    public void onStart(OptionalInt totalFiles) {
         this.totalFiles = totalFiles;
         this.processedCount = 0;
-        logger.info("Found " + totalFiles + " files to process");
+        if (totalFiles.isPresent()) {
+            logger.info("Found " + totalFiles.getAsInt() + " files to process");
+        } else {
+            logger.info("Starting processing (exact file count is not precomputed)");
+        }
     }
 
     @Override
@@ -56,5 +59,12 @@ public class ConsoleProgressListener implements ProgressListener {
     @Override
     public void onError(String error, Path path) {
         logger.error("Error processing " + path + ": " + error);
+    }
+
+    private String progressPrefix() {
+        if (totalFiles.isPresent()) {
+            return String.format("[%d/%d]", processedCount, totalFiles.getAsInt());
+        }
+        return String.format("[processed %d]", processedCount);
     }
 }
