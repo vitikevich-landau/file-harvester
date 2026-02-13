@@ -1,5 +1,6 @@
 package v.landau.service.impl;
 
+import v.landau.config.CollisionResolutionMode;
 import v.landau.config.HarvesterConfig;
 import v.landau.exception.HarvesterException;
 import v.landau.model.FileOperation;
@@ -10,9 +11,11 @@ import v.landau.strategy.impl.ConsoleProgressListener;
 import v.landau.util.ConsoleLogger;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.zip.CRC32;
 
 import static v.landau.model.FileOperation.OperationStatus.*;
 
@@ -204,9 +207,7 @@ public class FileHarvesterServiceImpl implements FileHarvesterService {
     private void processFile(Path sourceFile, HarvesterConfig config, HarvestResult.Builder resultBuilder) {
         resultBuilder.incrementProcessed();
 
-        // Generate target file path (flatten structure)
-        String fileName = generateUniqueFileName(sourceFile, config.getTargetDirectory(), config.isOverwriteExisting());
-        Path targetFile = config.getTargetDirectory().resolve(fileName);
+        Path targetFile = generateTargetFilePath(sourceFile, config);
 
         try {
             FileOperation operation = config.getProcessingStrategy()
@@ -240,20 +241,32 @@ public class FileHarvesterServiceImpl implements FileHarvesterService {
         }
     }
 
-    private String generateUniqueFileName(Path sourceFile, Path targetDir, boolean overwriteExisting) {
-        String originalName = sourceFile.getFileName().toString();
+    private Path generateTargetFilePath(Path sourceFile, HarvesterConfig config) {
+        CollisionResolutionMode mode = config.getCollisionResolutionMode();
+        Path targetDir = config.getTargetDirectory();
 
-        if (overwriteExisting) {
-            return originalName;
+        switch (mode) {
+            case OVERWRITE:
+                return targetDir.resolve(sourceFile.getFileName().toString());
+            case PRESERVE_RELATIVE_PATH:
+                Path relativePath = config.getSourceDirectory().relativize(sourceFile);
+                return targetDir.resolve(relativePath);
+            case HASH_SUFFIX:
+                return targetDir.resolve(generateUniqueFileNameWithHash(sourceFile, targetDir));
+            case SUFFIX_COUNTER:
+            default:
+                return targetDir.resolve(generateUniqueFileNameWithCounter(sourceFile, targetDir));
         }
+    }
 
+    private String generateUniqueFileNameWithCounter(Path sourceFile, Path targetDir) {
+        String originalName = sourceFile.getFileName().toString();
         Path potentialTarget = targetDir.resolve(originalName);
 
         if (!Files.exists(potentialTarget)) {
             return originalName;
         }
 
-        // Generate unique name by adding counter
         String nameWithoutExt = originalName;
         String extension = "";
 
@@ -272,5 +285,47 @@ public class FileHarvesterServiceImpl implements FileHarvesterService {
         } while (Files.exists(potentialTarget));
 
         return newName;
+    }
+
+    private String generateUniqueFileNameWithHash(Path sourceFile, Path targetDir) {
+        String originalName = sourceFile.getFileName().toString();
+        Path potentialTarget = targetDir.resolve(originalName);
+
+        if (!Files.exists(potentialTarget)) {
+            return originalName;
+        }
+
+        String nameWithoutExt = originalName;
+        String extension = "";
+
+        int lastDot = originalName.lastIndexOf('.');
+        if (lastDot != -1) {
+            nameWithoutExt = originalName.substring(0, lastDot);
+            extension = originalName.substring(lastDot);
+        }
+
+        String sourceFingerprint = configRelativePathFingerprint(sourceFile);
+        String candidate = nameWithoutExt + "_" + sourceFingerprint + extension;
+        potentialTarget = targetDir.resolve(candidate);
+
+        if (!Files.exists(potentialTarget)) {
+            return candidate;
+        }
+
+        int counter = 1;
+        do {
+            candidate = nameWithoutExt + "_" + sourceFingerprint + "_" + counter + extension;
+            potentialTarget = targetDir.resolve(candidate);
+            counter++;
+        } while (Files.exists(potentialTarget));
+
+        return candidate;
+    }
+
+    private String configRelativePathFingerprint(Path sourceFile) {
+        CRC32 crc32 = new CRC32();
+        byte[] bytes = sourceFile.toAbsolutePath().normalize().toString().getBytes(StandardCharsets.UTF_8);
+        crc32.update(bytes, 0, bytes.length);
+        return Long.toHexString(crc32.getValue());
     }
 }

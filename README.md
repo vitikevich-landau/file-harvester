@@ -7,7 +7,7 @@
 - **Рекурсивный обход** всех поддиректорий
 - **Гибкая фильтрация** файлов по расширениям (include/exclude правила)
 - **Плоская структура** в целевой директории (все файлы в одной папке)
-- **Автоматическое разрешение конфликтов** имен файлов
+- **Несколько режимов разрешения конфликтов** имен файлов (OVERWRITE, SUFFIX_COUNTER, PRESERVE_RELATIVE_PATH, HASH_SUFFIX)
 - **Цветной консольный вывод** с прогрессом операций
 - **Просмотр структуры директорий** до и после операции
 
@@ -26,7 +26,8 @@ java -jar fileharvester.jar
 1. **Исходную директорию** - откуда копировать файлы
 2. **Целевую директорию** - куда копировать файлы
 3. **Правила фильтрации** (опционально)
-4. **Настройки копирования**
+4. **Политику разрешения коллизий**
+5. **Настройки копирования**
 
 ### Примеры фильтров
 
@@ -66,7 +67,7 @@ HarvesterConfig config = HarvesterConfig.builder()
     .sourceDirectory(Paths.get("/source/directory"))
     .targetDirectory(Paths.get("/target/directory"))
     .createTargetIfNotExists(true)
-    .overwriteExisting(false)
+    .collisionResolutionMode(CollisionResolutionMode.SUFFIX_COUNTER)
     .build();
 
 FileHarvesterService harvester = new FileHarvesterServiceImpl();
@@ -99,6 +100,16 @@ FileFilterStrategy combined = filter1.and(filter2);
 FileFilterStrategy either = filter1.or(filter2);
 FileFilterStrategy inverted = filter1.negate();
 ```
+
+
+## Режимы разрешения коллизий
+
+- **OVERWRITE** — перезаписывать файл в целевой директории
+- **SUFFIX_COUNTER** — добавлять числовой суффикс (`_1`, `_2`, ...)
+- **PRESERVE_RELATIVE_PATH** — сохранять относительный путь из source в target
+- **HASH_SUFFIX** — добавлять хэш суффикс на основе исходного пути
+
+По умолчанию в конфиге используется безопасный режим `SUFFIX_COUNTER`.
 
 ## Структура проекта
 
