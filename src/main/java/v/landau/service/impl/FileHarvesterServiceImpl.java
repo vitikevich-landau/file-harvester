@@ -12,8 +12,7 @@ import v.landau.util.ConsoleLogger;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static v.landau.model.FileOperation.OperationStatus.*;
 
@@ -43,17 +42,32 @@ public class FileHarvesterServiceImpl implements FileHarvesterService {
         // Prepare target directory
         prepareTargetDirectory(config);
 
-        // Collect all files to process
-        List<Path> filesToProcess = collectFiles(config);
+        // Count files first to provide accurate progress N/M.
+        int totalFilesToProcess = countFilesToProcess(config);
 
         // Start progress tracking
-        progressListener.onStart(filesToProcess.size());
+        progressListener.onStart(totalFilesToProcess);
 
-        // Process files
+        // Process files while traversing the tree (streaming mode, no intermediate list)
         HarvestResult.Builder resultBuilder = HarvestResult.builder();
+        try {
+            Files.walkFileTree(config.getSourceDirectory(), new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (attrs.isRegularFile() && config.getFileFilterStrategy().accept(file)) {
+                        processFile(file, config, resultBuilder);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
 
-        for (Path sourceFile : filesToProcess) {
-            processFile(sourceFile, config, resultBuilder);
+                @Override
+                public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                    logger.warn("Cannot access file: " + file + " (" + exc.getMessage() + ")");
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            throw new HarvesterException("Failed to traverse source directory: " + e.getMessage(), e);
         }
 
         // Complete progress tracking
@@ -108,15 +122,15 @@ public class FileHarvesterServiceImpl implements FileHarvesterService {
         }
     }
 
-    private List<Path> collectFiles(HarvesterConfig config) throws HarvesterException {
-        List<Path> files = new ArrayList<>();
+    private int countFilesToProcess(HarvesterConfig config) throws HarvesterException {
+        AtomicLong filesCount = new AtomicLong();
 
         try {
             Files.walkFileTree(config.getSourceDirectory(), new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                     if (attrs.isRegularFile() && config.getFileFilterStrategy().accept(file)) {
-                        files.add(file);
+                        filesCount.incrementAndGet();
                     }
                     return FileVisitResult.CONTINUE;
                 }
@@ -131,7 +145,13 @@ public class FileHarvesterServiceImpl implements FileHarvesterService {
             throw new HarvesterException("Failed to traverse source directory: " + e.getMessage(), e);
         }
 
-        return files;
+        long total = filesCount.get();
+        if (total > Integer.MAX_VALUE) {
+            logger.warn("Too many files for exact progress value, capping at Integer.MAX_VALUE");
+            return Integer.MAX_VALUE;
+        }
+
+        return (int) total;
     }
 
     private void processFile(Path sourceFile, HarvesterConfig config, HarvestResult.Builder resultBuilder) {
