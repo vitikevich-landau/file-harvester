@@ -44,7 +44,8 @@ public class Main {
                     .targetDirectory(targetDir)
                     .createTargetIfNotExists(true)
                     .overwriteExisting(askYesNo(scanner, "Overwrite existing files? (y/n): "))
-                    .preserveFileAttributes(askYesNo(scanner, "Preserve file attributes? (y/n): "));
+                    .preserveFileAttributes(askYesNo(scanner, "Preserve file attributes? (y/n): "))
+                    .exactProgress(askYesNo(scanner, "Enable exact progress (double scan)? (y/n): "));
 
             if (extensions != null) {
                 configBuilder.fileFilterStrategy(new FlexibleExtensionFilterStrategy(extensions));

@@ -12,6 +12,7 @@ import v.landau.util.ConsoleLogger;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.OptionalInt;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static v.landau.model.FileOperation.OperationStatus.*;
@@ -42,8 +43,10 @@ public class FileHarvesterServiceImpl implements FileHarvesterService {
         // Prepare target directory
         prepareTargetDirectory(config);
 
-        // Count files first to provide accurate progress N/M.
-        int totalFilesToProcess = countFilesToProcess(config);
+        OptionalInt totalFilesToProcess = OptionalInt.empty();
+        if (config.isExactProgress()) {
+            totalFilesToProcess = OptionalInt.of(countFilesToProcess(config));
+        }
 
         // Start progress tracking
         progressListener.onStart(totalFilesToProcess);

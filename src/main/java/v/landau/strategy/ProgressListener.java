@@ -4,6 +4,7 @@ package v.landau.strategy;
 import v.landau.model.FileOperation;
 
 import java.nio.file.Path;
+import java.util.OptionalInt;
 
 /**
  * Listener interface for monitoring harvesting progress.
@@ -19,9 +20,9 @@ public interface ProgressListener {
     /**
      * Called when harvesting starts.
      *
-     * @param totalFiles estimated total files to process
+     * @param totalFiles optional total files to process. Empty when unknown.
      */
-    void onStart(int totalFiles);
+    void onStart(OptionalInt totalFiles);
 
     /**
      * Called when harvesting completes.
