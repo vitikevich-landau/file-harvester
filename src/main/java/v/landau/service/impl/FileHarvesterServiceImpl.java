@@ -236,7 +236,7 @@ public class FileHarvesterServiceImpl implements FileHarvesterService {
             resultBuilder.incrementFailed();
             String errorMsg = "Failed to process " + sourceFile + ": " + e.getMessage();
             resultBuilder.addError(errorMsg);
-            progressListener.onError(e.getMessage(), sourceFile);
+            progressListener.onError(errorMsg, sourceFile);
         }
     }
 

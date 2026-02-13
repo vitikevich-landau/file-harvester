@@ -7,7 +7,6 @@ import v.landau.strategy.FileProcessingStrategy;
 
 import java.io.IOException;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 
 /**
  * Strategy for copying files to target directory.
@@ -28,38 +27,26 @@ public class CopyFileStrategy implements FileProcessingStrategy {
             );
         }
 
-        try {
-            // Ensure parent directory exists
-            Files.createDirectories(targetPath.getParent());
+        // Ensure parent directory exists
+        Files.createDirectories(targetPath.getParent());
 
-            // Prepare copy options
-            CopyOption[] options = buildCopyOptions(config);
+        // Prepare copy options
+        CopyOption[] options = buildCopyOptions(config);
 
-            // Copy file
-            Files.copy(sourcePath, targetPath, options);
+        // Copy file
+        Files.copy(sourcePath, targetPath, options);
 
-            // Get file size
-            long fileSize = Files.size(sourcePath);
+        // Get file size
+        long fileSize = Files.size(sourcePath);
 
-            return new FileOperation(
-                    sourcePath,
-                    targetPath,
-                    FileOperation.OperationType.COPY,
-                    FileOperation.OperationStatus.SUCCESS,
-                    fileSize,
-                    "Successfully copied"
-            );
-
-        } catch (IOException e) {
-            return new FileOperation(
-                    sourcePath,
-                    targetPath,
-                    FileOperation.OperationType.ERROR,
-                    FileOperation.OperationStatus.FAILED,
-                    0,
-                    "Failed to copy: " + e.getMessage()
-            );
-        }
+        return new FileOperation(
+                sourcePath,
+                targetPath,
+                FileOperation.OperationType.COPY,
+                FileOperation.OperationStatus.SUCCESS,
+                fileSize,
+                "Successfully copied"
+        );
     }
 
     private CopyOption[] buildCopyOptions(HarvesterConfig config) {
