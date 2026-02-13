@@ -205,7 +205,7 @@ public class FileHarvesterServiceImpl implements FileHarvesterService {
         resultBuilder.incrementProcessed();
 
         // Generate target file path (flatten structure)
-        String fileName = generateUniqueFileName(sourceFile, config.getTargetDirectory());
+        String fileName = generateUniqueFileName(sourceFile, config.getTargetDirectory(), config.isOverwriteExisting());
         Path targetFile = config.getTargetDirectory().resolve(fileName);
 
         try {
@@ -240,8 +240,13 @@ public class FileHarvesterServiceImpl implements FileHarvesterService {
         }
     }
 
-    private String generateUniqueFileName(Path sourceFile, Path targetDir) {
+    private String generateUniqueFileName(Path sourceFile, Path targetDir, boolean overwriteExisting) {
         String originalName = sourceFile.getFileName().toString();
+
+        if (overwriteExisting) {
+            return originalName;
+        }
+
         Path potentialTarget = targetDir.resolve(originalName);
 
         if (!Files.exists(potentialTarget)) {
