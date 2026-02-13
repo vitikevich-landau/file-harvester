@@ -109,7 +109,7 @@ public class DirectoryTreePrinter {
         System.out.println(ConsoleColors.YELLOW + directory.toAbsolutePath() + ConsoleColors.RESET);
 
         try {
-            TreeNode root = buildTree(directory);
+            TreeNode root = buildTree(directory, 0);
             printNode(root, "", true, 0);
 
             // Print summary
@@ -124,8 +124,12 @@ public class DirectoryTreePrinter {
     /**
      * Build tree structure from directory
      */
-    private TreeNode buildTree(Path path) throws IOException {
+    private TreeNode buildTree(Path path, int currentDepth) throws IOException {
         TreeNode node = new TreeNode(path);
+
+        if (currentDepth >= maxDepth) {
+            return node;
+        }
 
         if (Files.isDirectory(path)) {
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
@@ -162,7 +166,7 @@ public class DirectoryTreePrinter {
                 });
 
                 for (Path child : children) {
-                    node.children.add(buildTree(child));
+                    node.children.add(buildTree(child, currentDepth + 1));
                 }
             }
         }
@@ -286,7 +290,10 @@ public class DirectoryTreePrinter {
     }
 
     /**
-     * Calculate statistics for the tree
+     * Calculate statistics for the built tree.
+     *
+     * <p>When maxDepth is configured, recursion in {@link #buildTree(Path, int)} is limited,
+     * so the summary reflects only the displayed subtree.
      */
     private TreeStats calculateStats(TreeNode root) {
         TreeStats stats = new TreeStats();
