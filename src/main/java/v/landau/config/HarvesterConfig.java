@@ -18,6 +18,8 @@ public class HarvesterConfig {
     private final boolean createTargetIfNotExists;
     private final boolean overwriteExisting;
     private final boolean preserveFileAttributes;
+    private final boolean collectOperations;
+    private final int maxOperationsToKeep;
     private final FileFilterStrategy fileFilterStrategy;
     private final FileProcessingStrategy processingStrategy;
 
@@ -27,6 +29,8 @@ public class HarvesterConfig {
         this.createTargetIfNotExists = builder.createTargetIfNotExists;
         this.overwriteExisting = builder.overwriteExisting;
         this.preserveFileAttributes = builder.preserveFileAttributes;
+        this.collectOperations = builder.collectOperations;
+        this.maxOperationsToKeep = builder.maxOperationsToKeep;
         this.fileFilterStrategy = builder.fileFilterStrategy != null
                 ? builder.fileFilterStrategy
                 : new AcceptAllFilterStrategy();
@@ -41,6 +45,8 @@ public class HarvesterConfig {
     public boolean isCreateTargetIfNotExists() { return createTargetIfNotExists; }
     public boolean isOverwriteExisting() { return overwriteExisting; }
     public boolean isPreserveFileAttributes() { return preserveFileAttributes; }
+    public boolean isCollectOperations() { return collectOperations; }
+    public int getMaxOperationsToKeep() { return maxOperationsToKeep; }
     public FileFilterStrategy getFileFilterStrategy() { return fileFilterStrategy; }
     public FileProcessingStrategy getProcessingStrategy() { return processingStrategy; }
 
@@ -57,6 +63,8 @@ public class HarvesterConfig {
         private boolean createTargetIfNotExists = true;
         private boolean overwriteExisting = false;
         private boolean preserveFileAttributes = true;
+        private boolean collectOperations = false;
+        private int maxOperationsToKeep = Integer.MAX_VALUE;
         private FileFilterStrategy fileFilterStrategy;
         private FileProcessingStrategy processingStrategy;
 
@@ -82,6 +90,19 @@ public class HarvesterConfig {
 
         public Builder preserveFileAttributes(boolean preserve) {
             this.preserveFileAttributes = preserve;
+            return this;
+        }
+
+        public Builder collectOperations(boolean collectOperations) {
+            this.collectOperations = collectOperations;
+            return this;
+        }
+
+        public Builder maxOperationsToKeep(int maxOperationsToKeep) {
+            if (maxOperationsToKeep < 0) {
+                throw new IllegalArgumentException("maxOperationsToKeep cannot be negative");
+            }
+            this.maxOperationsToKeep = maxOperationsToKeep;
             return this;
         }
 

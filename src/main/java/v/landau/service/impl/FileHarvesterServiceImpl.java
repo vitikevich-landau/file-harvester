@@ -49,7 +49,8 @@ public class FileHarvesterServiceImpl implements FileHarvesterService {
         progressListener.onStart(totalFilesToProcess);
 
         // Process files while traversing the tree (streaming mode, no intermediate list)
-        HarvestResult.Builder resultBuilder = HarvestResult.builder();
+        HarvestResult.Builder resultBuilder = HarvestResult.builder()
+                .maxOperationsToKeep(config.getMaxOperationsToKeep());
         try {
             Files.walkFileTree(config.getSourceDirectory(), new SimpleFileVisitor<Path>() {
                 @Override
@@ -212,7 +213,9 @@ public class FileHarvesterServiceImpl implements FileHarvesterService {
             FileOperation operation = config.getProcessingStrategy()
                     .processFile(sourceFile, targetFile, config);
 
-            resultBuilder.addOperation(operation);
+            if (config.isCollectOperations()) {
+                resultBuilder.addOperation(operation);
+            }
             progressListener.onFileProcessed(operation);
 
             // Update statistics

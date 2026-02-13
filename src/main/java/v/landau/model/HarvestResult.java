@@ -59,6 +59,7 @@ public class HarvestResult {
         private long elapsedTime = 0;
         private final List<FileOperation> operations = new ArrayList<>();
         private final List<String> errors = new ArrayList<>();
+        private int maxOperationsToKeep = Integer.MAX_VALUE;
 
         public Builder incrementProcessed() {
             this.totalFilesProcessed++;
@@ -90,8 +91,18 @@ public class HarvestResult {
             return this;
         }
 
+        public Builder maxOperationsToKeep(int maxOperationsToKeep) {
+            if (maxOperationsToKeep < 0) {
+                throw new IllegalArgumentException("maxOperationsToKeep cannot be negative");
+            }
+            this.maxOperationsToKeep = maxOperationsToKeep;
+            return this;
+        }
+
         public Builder addOperation(FileOperation operation) {
-            this.operations.add(operation);
+            if (operations.size() < maxOperationsToKeep) {
+                this.operations.add(operation);
+            }
             return this;
         }
 
